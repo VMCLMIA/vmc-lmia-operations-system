@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VMC LMIA Operations System</title>
+<style>
+  :root{--vmc-blue:#0a66c2;--vmc-dark:#004182;--vmc-light:#eef3f8;--vmc-gray:#5e5e5e;--vmc-border:#d0d7de;--vmc-bg:#f4f6f9;--sidebar-width:280px;--shadow:0 2px 8px rgba(0,0,0,0.08);--shadow-lg:0 4px 20px rgba(0,0,0,0.12)}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--vmc-bg);color:#1a1a1a;line-height:1.6}
+  .top-header{background:linear-gradient(135deg,var(--vmc-dark),var(--vmc-blue));color:#fff;height:64px;display:flex;align-items:center;padding:0 24px;position:fixed;top:0;left:0;right:0;z-index:1000;box-shadow:var(--shadow-lg)}
+  .top-header .logo{display:flex;align-items:center;gap:12px;min-width:240px}
+  .top-header .logo img{width:40px;height:40px;border-radius:50%;border:2px solid #fff;background:#fff;object-fit:contain}
+  .top-header .logo-text h1{font-size:16px;font-weight:700}
+  .top-header .logo-text p{font-size:11px;opacity:.85}
+  .top-header .search-container{flex:1;max-width:500px;margin:0 auto;position:relative}
+  .top-header .search-container input{width:100%;padding:8px 14px 8px 38px;border-radius:20px;border:none;background:rgba(255,255,255,.15);color:#fff;font-size:13px;outline:none}
+  .top-header .search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px}
+  .top-header .user-info{display:flex;align-items:center;gap:12px;margin-left:auto}
+  .top-header .user-avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-weight:700}
+  .sidebar{position:fixed;top:64px;left:0;bottom:0;width:var(--sidebar-width);background:#fff;border-right:1px solid var(--vmc-border);overflow-y:auto;z-index:999;transition:transform .3s}
+  .sidebar-section{padding:16px 0;border-bottom:1px solid var(--vmc-border)}
+  .sidebar-section-title{padding:0 16px 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--vmc-gray)}
+  .sidebar-item{padding:8px 16px 8px 24px;font-size:13px;cursor:pointer;color:#333;display:flex;align-items:center;gap:8px;border-left:3px solid transparent;transition:.15s}
+  .sidebar-item:hover{background:var(--vmc-light);color:var(--vmc-blue)}
+  .sidebar-item.active{background:var(--vmc-light);color:var(--vmc-blue);font-weight:600;border-left-color:var(--vmc-blue)}
+  .sidebar-item .item-icon{font-size:14px;width:20px;text-align:center}
+  .sidebar-item .item-arrow{margin-left:auto;font-size:10px}
+  .sidebar-submenu{max-height:0;overflow:hidden;transition:max-height .3s}
+  .sidebar-submenu.open{max-height:2000px}
+  .sidebar-subitem{padding:6px 16px 6px 44px;font-size:12px;cursor:pointer;color:var(--vmc-gray)}
+  .sidebar-subitem:hover{color:var(--vmc-blue);background:var(--vmc-light)}
+  .main-content{margin-left:var(--sidebar-width);margin-top:64px;padding:24px 32px 60px}
+  .breadcrumb{font-size:12px;color:var(--vmc-gray);margin-bottom:16px}
+  .breadcrumb a{color:var(--vmc-blue);text-decoration:none;cursor:pointer}
+  .dashboard{max-width:1200px;margin:0 auto}
+  .dashboard-welcome{background:linear-gradient(135deg,var(--vmc-dark),var(--vmc-blue));color:#fff;border-radius:12px;padding:32px;margin-bottom:24px;box-shadow:var(--shadow-lg)}
+  .dashboard-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px;margin-bottom:24px}
+  .stat-card{background:#fff;border-radius:10px;padding:20px;text-align:center;border:1px solid var(--vmc-border)}
+  .stat-card .stat-number{font-size:32px;font-weight:700;color:var(--vmc-blue)}
+  .stat-card .stat-label{font-size:12px;color:var(--vmc-gray)}
+  .dashboard-sections{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+  .dashboard-card{background:#fff;border-radius:10px;padding:20px;border:1px solid var(--vmc-border);cursor:pointer;transition:.2s}
+  .dashboard-card:hover{border-color:var(--vmc-blue);transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+  .dashboard-card .card-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .dashboard-card .card-title{font-size:15px;font-weight:700;color:var(--vmc-dark)}
+  .content-area{max-width:1200px;margin:0 auto;background:#fff;border-radius:12px;border:1px solid var(--vmc-border);box-shadow:var(--shadow);min-height:400px}
+  .content-area iframe{width:100%;min-height:800px;border:none;border-radius:12px;display:block}
+  .empty-state{text-align:center;padding:60px 32px}
+  .empty-state .empty-icon{font-size:48px;margin-bottom:16px}
+  .empty-state h3{font-size:18px;color:var(--vmc-dark)}
+  .admin-form{max-width:900px;margin:20px auto;padding:24px;background:#fff;border-radius:12px;box-shadow:var(--shadow)}
+  .admin-form select,.admin-form textarea,.admin-form input[type=file]{width:100%;padding:10px;border:1px solid var(--vmc-border);border-radius:6px;font-size:14px}
+  .admin-form textarea{min-height:300px}
+  .admin-form .btn{background:var(--vmc-blue);color:#fff;padding:10px 24px;border:none;border-radius:6px;cursor:pointer;margin-top:12px}
+  .admin-message{padding:10px;background:#e8f5e9;color:#2e7d32;border-radius:6px;margin:10px 0;display:none}
+  .admin-list{max-width:900px;margin:20px auto;padding:24px;background:#fff;border-radius:12px}
+  .admin-list table{width:100%;border-collapse:collapse}
+  .admin-list th,.admin-list td{padding:8px;border:1px solid var(--vmc-border);text-align:left;font-size:13px}
+  .admin-list th{background:var(--vmc-light)}
+  .admin-list button{padding:4px 12px;font-size:12px;border:none;border-radius:4px;cursor:pointer;margin:2px}
+  .admin-list .edit-btn{background:#e3f2fd;color:#0a66c2}
+  .admin-list .delete-btn{background:#fdecea;color:#c62828}
+  @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main-content{margin-left:0;padding:16px}.mobile-toggle{display:block}}
+  .mobile-toggle{display:none;background:none;border:none;color:#fff;font-size:24px;margin-right:12px}
+</style>
+</head>
+<body>
+
+<!-- ========= HOME PAGE (EXACT COPY FROM USER'S FILE - UNCHANGED) ========= -->
+<div id="home-page" style="min-height:100vh; background: radial-gradient(circle at 20% 20%, #1e293b 0%, #0a0e1a 60%); color:#e2e8f0; font-family:'Inter',sans-serif;">
+<style>
+  .home-container{max-width:1400px;margin:0 auto;padding:20px 24px}
+  .home-bg-shape{position:fixed;border-radius:50%;pointer-events:none;opacity:.08;filter:blur(50px);z-index:0}
+  .home-shape-1{width:300px;height:300px;background:#dc2626;top:10%;left:-50px}
+  .home-shape-2{width:200px;height:200px;background:#f97316;top:50%;right:-30px}
+  .home-shape-3{width:150px;height:150px;background:#3b82f6;bottom:10%;left:30%}
+  .home-header{padding:20px 40px;display:flex;justify-content:center;background:linear-gradient(135deg,#f97316,#ea580c);border-bottom:1px solid rgba(255,255,255,.1);position:relative;z-index:10;box-shadow:0 4px 20px rgba(249,115,22,.3)}
+  .home-logo-vmc{display:flex;align-items:center;gap:10px;font-weight:700;color:#e2e8f0}
+  .home-logo-mark{width:60px;height:60px;border-radius:50%;border:2px solid #ea580c;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#f97316,#ea580c);font-weight:800;color:#fff;font-size:1.3rem;line-height:1;box-shadow:0 0 20px rgba(249,115,22,.3)}
+  .home-logo-mark .sub{font-size:.45rem;font-weight:600;letter-spacing:1px}
+  .home-overview-section{padding:40px 0 20px;position:relative;z-index:5}
+  .home-overview-title{text-align:center;font-family:'Space Grotesk',sans-serif;font-size:2.2rem;font-weight:700;margin-bottom:30px}
+  .home-overview-title .grad{background:linear-gradient(135deg,#dc2626,#f97316,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .home-overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:1200px;margin:0 auto}
+  .home-overview-card{background:#1a2332;border-radius:16px;padding:28px;box-shadow:0 10px 30px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.05);transition:all .3s;position:relative;overflow:hidden}
+  .home-overview-card:hover{transform:translateY(-4px);box-shadow:0 20px 50px rgba(0,0,0,.4)}
+  .home-overview-card.full-width{grid-column:span 2}
+  .home-overview-card.welcome{border-top:3px solid #f97316}
+  .home-overview-card.vision{border-top:3px solid #dc2626}
+  .home-overview-card.offices{border-top:3px solid #f59e0b}
+  .home-overview-card-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:14px;background:rgba(220,38,38,.1)}
+  .home-overview-card h3{font-family:'Poppins',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:10px;color:#e2e8f0}
+  .home-overview-card p{font-size:.9rem;color:#94a3b8;line-height:1.7;margin-bottom:8px}
+  .home-overview-card p strong{color:#e2e8f0}
+  .home-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:30px;max-width:1200px;margin-left:auto;margin-right:auto}
+  .home-stat-box{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px;text-align:center;transition:all .3s}
+  .home-stat-box:hover{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.3);transform:translateY(-4px)}
+  .home-stat-box .icon{font-size:1.6rem;margin-bottom:8px}
+  .home-stat-box .number{font-size:1.6rem;font-weight:800;font-family:'Space Grotesk',sans-serif}
+  .home-stat-box .label{font-size:.75rem;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+  .home-stat-box.red .number{color:#dc2626}
+  .home-stat-box.orange .number{color:#f97316}
+  .home-stat-box.amber .number{color:#f59e0b}
+  .home-stat-box.green .number{color:#22c55e}
+  .home-license-banner{background:linear-gradient(135deg,rgba(220,38,38,.1),rgba(249,115,22,.1));border:1px solid rgba(220,38,38,.3);border-radius:16px;padding:20px 28px;display:flex;align-items:center;gap:20px;max-width:1200px;margin:30px auto 0;flex-wrap:wrap}
+  .home-license-badge{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#dc2626,#f97316);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0}
+  .home-license-content{flex:1;min-width:250px}
+  .home-license-content .l-label{font-size:.75rem;color:#94a3b8;text-transform:uppercase;letter-spacing:2px}
+  .home-license-content .l-number{font-size:1.4rem;font-weight:800;font-family:'Space Grotesk',sans-serif;color:#f59e0b}
+  .home-license-content .l-desc{font-size:.8rem;color:#94a3b8;margin-top:4px}
+  .home-license-site{background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.15);border-radius:30px;padding:10px 20px;text-decoration:none;color:#e2e8f0;font-size:.85rem;font-weight:600;transition:all .3s}
+  .home-license-site:hover{background:#f97316;border-color:#f97316;box-shadow:0 0 20px rgba(249,115,22,.4);transform:scale(1.05);color:#fff}
+  .home-value-pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .home-pill{padding:5px 14px;border-radius:30px;font-size:.75rem;font-weight:600;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05)}
+  .home-pill:hover{border-color:#f97316;background:rgba(249,115,22,.15);transform:scale(1.05)}
+  .home-leadership-section{margin-top:40px;padding:20px 0;position:relative;z-index:5}
+  .home-section-heading{font-size:1.3rem;font-weight:700;color:#e2e8f0;margin-bottom:20px;display:flex;align-items:center;gap:10px;font-family:'Poppins',sans-serif}
+  .home-section-heading::before{content:'';width:4px;height:22px;background:linear-gradient(135deg,#dc2626,#f97316);border-radius:2px}
+  .home-leadership-row{display:flex;gap:20px;justify-content:center;flex-wrap:nowrap}
+  .home-profile-card{background:#1a2332;border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(0,0,0,.3);transition:all .3s;position:relative;overflow:hidden;flex:1;min-width:0;max-width:380px}
+  .home-profile-card:hover{transform:translateY(-4px);box-shadow:0 15px 40px rgba(0,0,0,.5);border-color:rgba(220,38,38,.3)}
+  .home-profile-card.primary{border:1px solid #dc2626;background:linear-gradient(135deg,#1a2332,#1f1a2e)}
+  .home-profile-card.primary::after{content:'★';position:absolute;top:10px;right:15px;font-size:1.2rem;color:#f59e0b}
+  .home-photo-wrap{width:80px;height:80px;border-radius:50%;border:2px solid rgba(220,38,38,.3);background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;font-size:.8rem;color:#fecaca;margin-bottom:12px;overflow:hidden}
+  .home-profile-name{font-size:1.1rem;font-weight:700;color:#e2e8f0;margin-bottom:2px;font-family:'Poppins',sans-serif}
+  .home-profile-title{font-size:.8rem;color:#94a3b8;line-height:1.4;margin-bottom:8px}
+  .home-profile-expertise{font-size:.75rem;color:#94a3b8;border-top:1px solid rgba(255,255,255,.05);padding-top:8px;margin-top:8px;line-height:1.5}
+  .home-profile-expertise strong{color:#e2e8f0;font-weight:600}
+  .home-profile-meta{font-size:.75rem;color:#94a3b8;margin-top:6px}
+  .home-services-section{margin-top:40px;padding:20px 0;position:relative;z-index:5}
+  .home-services-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:12px}
+  .home-service-card{border-radius:12px;padding:14px 8px;text-align:center;font-size:.85rem;font-weight:600;color:#fff;transition:all .3s;box-shadow:0 10px 30px rgba(0,0,0,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:90px;cursor:default}
+  .home-service-card .svc-icon{font-size:1.6rem;margin-bottom:6px}
+  .home-service-card:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 15px 40px rgba(0,0,0,.3);filter:brightness(1.1)}
+  .home-service-card:nth-child(1){background:linear-gradient(135deg,#7f1d1d,#991b1b)}
+  .home-service-card:nth-child(2){background:linear-gradient(135deg,#9a3412,#c2410c)}
+  .home-service-card:nth-child(3){background:linear-gradient(135deg,#92400e,#b45309)}
+  .home-service-card:nth-child(4){background:linear-gradient(135deg,#14532d,#166534)}
+  .home-service-card:nth-child(5){background:linear-gradient(135deg,#1e3a8a,#1e40af)}
+  .home-service-card:nth-child(6){background:linear-gradient(135deg,#4c1d95,#5b21b6)}
+  .home-service-card:nth-child(7){background:linear-gradient(135deg,#831843,#9d174d)}
+  .home-service-card:nth-child(8){background:linear-gradient(135deg,#78350f,#92400e)}
+  .home-service-card:nth-child(9){background:linear-gradient(135deg,#164e63,#155e75)}
+  .home-service-card:nth-child(10){background:linear-gradient(135deg,#30764,#41d95)}
+  .home-service-card:nth-child(11){background:linear-gradient(135deg,#111827,#1f2937)}
+  .home-service-card:nth-child(12){background:linear-gradient(135deg,#831843,#9d174d)}
+  .home-service-card:nth-child(13){background:linear-gradient(135deg,#9a3412,#c2410c)}
+  .home-service-card:nth-child(14){background:linear-gradient(135deg,#14532d,#166534)}
+  .home-service-card:nth-child(15){background:linear-gradient(135deg,#1e3a8a,#1e40af)}
+  .home-service-card:nth-child(16){background:linear-gradient(135deg,#7f1d1d,#991b1b)}
+  .home-next-arrow{text-align:center;padding:40px 0;z-index:5;position:relative}
+  .home-next-arrow a{text-decoration:none;display:inline-flex;flex-direction:column;align-items:center;gap:8px;color:#94a3b8;transition:all .3s;cursor:pointer}
+  .home-next-arrow a:hover{color:#fecaca;transform:translateY(-4px)}
+  .home-next-arrow .arrow-label{font-size:.8rem;letter-spacing:2px;text-transform:uppercase;font-weight:500}
+  .home-next-arrow .arrow-icon{font-size:2.5rem;animation:bounceVertical 2s infinite}
+  @keyframes bounceVertical{0%,100%{transform:translateY(0)}50%{transform:translateY(12px)}}
+  .home-cursive-intro{font-family:'Caveat',cursive;font-size:1.4rem;line-height:1.8;color:#e2e8f0;background:rgba(255,255,255,.05);border-radius:16px;padding:30px;margin:30px 0;border:1px solid rgba(255,255,255,.1)}
+  .home-cursive-intro h2{font-size:2rem;text-align:center;margin-bottom:20px;color:#f59e0b;font-weight:700}
+  .home-cursive-intro p{margin-bottom:12px}
+  @media(max-width:1200px){.home-services-grid{grid-template-columns:repeat(4,1fr)}}
+  @media(max-width:900px){.home-overview-grid{grid-template-columns:1fr}.home-overview-card.full-width{grid-column:span 1}.home-stats-row{grid-template-columns:repeat(2,1fr)}.home-leadership-row{flex-wrap:wrap}.home-profile-card{max-width:none}.home-services-grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.home-stats-row{grid-template-columns:1fr 1fr}.home-license-banner{flex-direction:column;text-align:center}.home-leadership-row{flex-direction:column}}
+</style>
+
+<div class="home-bg-shape home-shape-1"></div>
+<div class="home-bg-shape home-shape-2"></div>
+<div class="home-bg-shape home-shape-3"></div>
+
+<header class="home-header">
+  <div class="home-logo-vmc">
+    <div class="home-logo-mark"><div>VMC</div><div class="sub">IMMIGRATION</div></div>
+    <span style="font-size:1.4rem;font-weight:700;color:#e2e8f0;margin-left:6px;">Visa Master Canada</span>
+  </div>
+</header>
+
+<main class="home-container">
+  <div class="home-overview-section">
+    <div class="home-overview-title"><span class="grad">Welcome to Visa Master Canada</span></div>
+    <div class="home-overview-grid">
+      <div class="home-overview-card welcome full-width">
+        <div class="home-overview-card-icon">👋</div>
+        <h3>Your Trusted Immigration Partner</h3>
+        <p>As a <strong>Regulated Canadian Immigration Consultant (RCIC)</strong> with license <strong style="color:#f59e0b;">R705959</strong>, we are dedicated to delivering exceptional services with a personal touch. With <strong>multiple offices across Canada</strong>, our team of immigration experts and agents possesses comprehensive knowledge of immigration laws, policies, and the underlying context.</p>
+        <p>From <strong>temporary visas</strong> to <strong>permanent residency applications</strong>, <strong>work permits</strong> to <strong>study permits</strong>, and <strong>citizenship applications</strong>, we offer tailored strategies that maximize your chances of success.</p>
+        <div class="home-value-pills"><span class="home-pill">💼 Professional</span><span class="home-pill">🤝 Transparent</span><span class="home-pill">🎯 Results-Driven</span><span class="home-pill">🗺️ Canada-Wide</span><span class="home-pill">⚡ Personal Touch</span></div>
+      </div>
+      <div class="home-overview-card vision">
+        <div class="home-overview-card-icon">💎</div>
+        <h3>Our Promise</h3>
+        <p>Beyond our expertise, we value building <strong>strong client relationships</strong>. Your dreams become our mission, and we are committed to <strong>surpassing your expectations</strong>.</p>
+        <p style="font-style:italic;font-size:.85rem;">"Trust us to guide you on your immigration journey, ensuring a positive and seamless experience."</p>
+      </div>
+      <div class="home-overview-card offices">
+        <div class="home-overview-card-icon">📍</div>
+        <h3>Our Presence</h3>
+        <p><strong>Headquartered in Brampton, Ontario</strong> with multiple offices across Canada, we're always close to serve you better.</p>
+        <div class="home-value-pills"><span class="home-pill">🇨🇦 Ontario</span><span class="home-pill">🇨🇦 British Columbia</span><span class="home-pill">🇨🇦 Alberta</span><span class="home-pill">🇨🇦 More...</span></div>
+      </div>
+    </div>
+    <div class="home-stats-row">
+      <div class="home-stat-box red"><div class="icon">🎓</div><div class="number">15+</div><div class="label">Years Experience</div></div>
+      <div class="home-stat-box orange"><div class="icon">🏢</div><div class="number">6+</div><div class="label">Offices Canada-Wide</div></div>
+      <div class="home-stat-box amber"><div class="icon">📋</div><div class="number">16</div><div class="label">Service Categories</div></div>
+      <div class="home-stat-box green"><div class="icon">✓</div><div class="number">100%</div><div class="label">Committed to You</div></div>
+    </div>
+    <div class="home-license-banner">
+      <div class="home-license-badge">🏛️</div>
+      <div class="home-license-content">
+        <div class="l-label">Licensed &amp; Regulated</div>
+        <div class="l-number">RCIC License #R705959</div>
+        <div class="l-desc">Regulated Canadian Immigration Consultant — serving clients with integrity.</div>
+      </div>
+      <a class="home-license-site" href="https://www.visamastercanada.com/" target="_blank" rel="noopener noreferrer">🌐 Visit Our Website</a>
+    </div>
+  </div>
+
+  <div class="home-leadership-section">
+    <div class="home-section-heading">Leadership Team</div>
+    <div class="home-leadership-row">
+      <div class="home-profile-card primary">
+        <div class="home-photo-wrap"><span>S</span></div>
+        <div class="home-profile-name">Sanjay Singh Kumar</div>
+        <div class="home-profile-title">Principal Consultant – Licensed Regulated Canadian Immigration Consultant</div>
+        <div class="home-profile-expertise"><strong>Expertise:</strong> Complex immigration & refusal cases, LMIA & employer services, Express Entry & PNP strategy, Ontario PNP, BC PNP, Alberta AAIP, Nova Scotia PNP, Saskatchewan SINP, Manitoba MPNP, LMIA refusals, PFL response, GCMS analysis</div>
+        <div class="home-profile-expertise"><strong>Programs:</strong> Global Talent Stream, LMIA, Express Entry, OINP, BC PNP, AAIP, SINP, MPNP, NSNP, AIP, Work permits, Employer compliance, PFL, GCMS, TR to PR, PEI PNP, NL PNP, CUSMA, Intra-company transfer</div>
+        <div class="home-profile-meta">📍 Serving: GTA, Ontario, Canada-wide<br>🎓 Experience: 15 years<br>🗣️ Languages: English, Punjabi, Hindi, Urdu</div>
+      </div>
+      <div class="home-profile-card">
+        <div class="home-photo-wrap"><span>V</span></div>
+        <div class="home-profile-name">Vipin Sir</div>
+        <div class="home-profile-title">Managing Director – Operations</div>
+        <div class="home-profile-meta">📝 <strong>To be provided:</strong><br>• Photo<br>• Bio<br>• Responsibilities<br>• Expertise<br>• Languages<br>• Contact/internal info</div>
+      </div>
+      <div class="home-profile-card">
+        <div class="home-photo-wrap"><span>A</span></div>
+        <div class="home-profile-name">Amanpreet Kaur</div>
+        <div class="home-profile-title">Licensed Regulated Canadian Immigration Consultant / IRB Specialist</div>
+        <div class="home-profile-expertise"><strong>Expertise:</strong> Refugee claims & IRB representation, PRRA, Protected persons PR & family reunification, Work permits & open work permits, Study permits & SDS stream, Permanent residence applications, Ontario PNP, Nova Scotia PNP, Atlantic programs, PGWP, Spousal work permits, IEC, Visitor & Super Visa, TR to PR pathway</div>
+        <div class="home-profile-meta">📍 Serving: GTA, Ontario, Canada-wide<br>🎓 Experience: 15 years<br>🗣️ Languages: English, Punjabi, Hindi</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-services-section">
+    <div class="home-section-heading">Our Services</div>
+    <div class="home-services-grid">
+      <div class="home-service-card"><span class="svc-icon">🇨🇦</span> Canada PR</div>
+      <div class="home-service-card"><span class="svc-icon">⚡</span> Express Entry</div>
+      <div class="home-service-card"><span class="svc-icon">🏞️</span> PNP</div>
+      <div class="home-service-card"><span class="svc-icon">🎓</span> CEC</div>
+      <div class="home-service-card"><span class="svc-icon">🏢</span> LMIA</div>
+      <div class="home-service-card"><span class="svc-icon">💼</span> Work Permit</div>
+      <div class="home-service-card"><span class="svc-icon">✈️</span> Visitor Visa</div>
+      <div class="home-service-card"><span class="svc-icon">💑</span> Spouse Work Permit</div>
+      <div class="home-service-card"><span class="svc-icon">🏫</span> College Admissions</div>
+      <div class="home-service-card"><span class="svc-icon">🎓</span> Post Graduate WP</div>
+      <div class="home-service-card"><span class="svc-icon">🚫</span> Refusal Cases</div>
+      <div class="home-service-card"><span class="svc-icon">🛂</span> Citizenship</div>
+      <div class="home-service-card"><span class="svc-icon">🔄</span> PR Renewal</div>
+      <div class="home-service-card"><span class="svc-icon">🌍</span> Immigration</div>
+      <div class="home-service-card"><span class="svc-icon">💞</span> Spousal PR</div>
+      <div class="home-service-card"><span class="svc-icon">👨‍👩‍👧‍👦</span> Parent & GP PR</div>
+    </div>
+  </div>
+
+  <div class="home-cursive-intro">
+    <h2>LMIA Department – Introduction</h2>
+    <p>LMIA stands for <strong>Labour Market Impact Assessment</strong>. If Canadian employers are unable to find a suitable candidate for the position they need to fill, they may choose the LMIA process to hire a temporary foreign worker for that position.</p>
+    <p>First, they need to post the job advertisement on the Job Bank portal and two other recruitment platforms. Job Bank is mandatory and is also operated by the Government of Canada.</p>
+    <p>So, why do we need to post the job on Job Bank and two other platforms, and who checks this? <strong>Employment and Social Development Canada (ESDC)</strong> will review the recruitment activities. They want to check why there are no suitable Canadian citizens or permanent residents available for the position and why the employer needs to hire a temporary foreign worker.</p>
+    <p>Therefore, you need to post the job and complete the recruitment process. Canadian citizens and permanent residents may apply for the advertised position. If you find a suitable candidate through the advertisement, then the employer can proceed with that candidate. If you do not find a suitable candidate, then you need to show the recruitment activities completed, including the interviews conducted and why a Canadian citizen or permanent resident was not found or selected for the position.</p>
+    <p>After this part is completed, there are other rules for LMIAs as per ESDC that we need to follow and further tasks that we need to complete.</p>
+    <p>For the advertisement, we first need to know from the employer which position they want to submit. Then, as per the NOC (National Occupational Classification) link, we will identify the NOC code. We need to find the duties that match the employer's requirements, and based on that NOC code, the position assessment will be completed.</p>
+    <p>Then, for that position, we need to decide the wage and stream as per the applicable requirements and link. After that, we will post the advertisement on Job Bank and two other recruitment platforms.</p>
+    <p>There are many LMIA streams, but our team works mostly on <strong>High-Wage and Low-Wage LMIAs</strong>. These are the streams that we will learn as separate topics. For High-Wage LMIA, we need to post the job for <strong>4 consecutive weeks</strong>, and for Low-Wage LMIA, we need to post the job for <strong>8 consecutive weeks</strong>.</p>
+    <p>Then, after the recruitment is completed, including the interviews of Canadian citizens and permanent residents, we need to document why they were not selected and maintain a separate document for this.</p>
+    <p>Then, we will submit the LMIA file as per the applicable stream. After the file is submitted, we will receive a response as per the applicable process and time period.</p>
+    <p>Keep the main focus on the recruitment part. If we can find a suitable candidate, then the employer can proceed with that candidate.</p>
+    <p>Once you receive a response from the officer, they will go through the details to understand why the employer needs a temporary foreign worker and why they were not able to find a suitable Canadian citizen or permanent resident. They will also check the information that was submitted.</p>
+    <p>Based on this information and the applicable requirements, a decision is made on each file.</p>
+    <p>For all of this, there are many rules and requirements that apply region-wise and in different situations. We will go through all these chapters and understand them better step by step.</p>
+  </div>
+</main>
+
+<div class="home-next-arrow">
+  <a onclick="showMainApp()">
+    <span class="arrow-label">Proceed to Dashboard</span>
+    <span class="arrow-icon">➜</span>
+  </a>
+</div>
+</div>
+
+<!-- ========= MAIN APP (hidden initially) ========= -->
+<header class="top-header" id="app-header" style="display:none;">
+  <button class="mobile-toggle" onclick="toggleSidebar()">☰</button>
+  <div class="logo">
+    <img src="https://media.licdn.com/dms/image/v2/D4E0BAQFCZqTF236bcQ/company-logo_200_200/company-logo_200_200/0/1684805283607/visamastercan_logo?e=2147483647&v=beta&t=TyNaIoBWkIJDifpbG5Ut63BM2clfdi_sqlnULA4pa_0" alt="VMC Logo" onerror="this.style.display='none'">
+    <div class="logo-text"><h1>VMC LMIA Operations</h1><p>Internal Knowledge System</p></div>
+  </div>
+  <div class="search-container"><span class="search-icon">🔍</span><input type="text" id="global-search" placeholder="Search..." oninput="handleSearch(this.value)"></div>
+  <div class="user-info"><div class="user-avatar">A</div><div><div class="user-name">Admin</div><div class="user-role">Administrator</div></div></div>
+</header>
+
+<aside class="sidebar" id="sidebar" style="display:none;">
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Manual</div>
+    <div class="sidebar-item" data-nav="manual" data-id="manual-1" onclick="navigateTo('manual','manual-1')"><span class="item-icon">📋</span>1. Position Assessment</div>
+    <div class="sidebar-item" data-nav="manual" data-id="manual-2" onclick="navigateTo('manual','manual-2')"><span class="item-icon">💰</span>2. Wage Assessment & LMIA Stream</div>
+    <div class="sidebar-item" data-nav="manual" data-id="manual-3" onclick="navigateTo('manual','manual-3')"><span class="item-icon">👥</span>3. Employer Eligibility & Workforce</div>
+    <div class="sidebar-item" data-nav="manual" data-id="manual-4" onclick="navigateTo('manual','manual-4')"><span class="item-icon">📢</span>4. Job Bank Advertisement & Recruitment</div>
+    <div class="sidebar-item" data-nav="manual" data-id="manual-5" onclick="navigateTo('manual','manual-5')"><span class="item-icon">📊</span>5. Recruitment Efforts</div>
+    <div class="sidebar-item" data-nav="manual" data-id="manual-6" onclick="navigateTo('manual','manual-6')"><span class="item-icon">📤</span>6. LMIA Submission – High Wage</div>
+    <div class="sidebar-item" data-nav="manual" data-id="manual-7" onclick="navigateTo('manual','manual-7')"><span class="item-icon">📉</span>7. Low Wage Submission</div>
+    <div class="sidebar-item" data-nav="manual" data-id="manual-8" onclick="navigateTo('manual','manual-8')"><span class="item-icon">🎤</span>8. LMIA Officer Interview Prep</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Actual Process Guide</div>
+    <div class="sidebar-item" data-nav="process" data-id="process-1" onclick="navigateTo('process','process-1')"><span class="item-icon">🏠</span>1. Department Overview</div>
+    <div class="sidebar-item" data-nav="process" data-id="process-2" onclick="navigateTo('process','process-2')"><span class="item-icon">📋</span>2. Position Assessment</div>
+    <div class="sidebar-item" data-nav="process" data-id="process-3" onclick="navigateTo('process','process-3')"><span class="item-icon">💰</span>3. Wage & Stream</div>
+    <div class="sidebar-item" data-nav="process" data-id="process-4" onclick="navigateTo('process','process-4')"><span class="item-icon">📢</span>4. Job Bank Advert & Details</div>
+    <div class="sidebar-item" data-nav="process" data-id="process-5" onclick="navigateTo('process','process-5')"><span class="item-icon">📊</span>5. Recruitment Efforts</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Templates & Checklists</div>
+    <div class="sidebar-item" onclick="toggleSubmenu(this)"><span class="item-icon">📧</span>Email Templates<span class="item-arrow">▶</span></div>
+    <div class="sidebar-submenu"><div class="sidebar-subitem" onclick="navigateTo('templates','template-email-onboarding')">Employer Onboarding</div></div>
+    <div class="sidebar-item" onclick="toggleSubmenu(this)"><span class="item-icon">📊</span>Recruitment Efforts<span class="item-arrow">▶</span></div>
+    <div class="sidebar-submenu">
+      <div class="sidebar-subitem" onclick="navigateTo('templates','template-recruitment-data')">Recruitment Ad Data Template</div>
+      <div class="sidebar-subitem" onclick="navigateTo('templates','template-recruitment-efforts')">Recruitment Efforts Template</div>
+    </div>
+    <div class="sidebar-item" data-nav="templates" data-id="template-high-wage" onclick="navigateTo('templates','template-high-wage')"><span class="item-icon">📈</span>High Wage Template</div>
+    <div class="sidebar-item" data-nav="templates" data-id="template-low-wage" onclick="navigateTo('templates','template-low-wage')"><span class="item-icon">📉</span>Low Wage Template</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Government Resources</div>
+    <div class="sidebar-item" data-nav="resources" data-id="resource-census" onclick="navigateTo('resources','resource-census')"><span class="item-icon">🗺️</span>1. Census</div>
+    <div class="sidebar-item" data-nav="resources" data-id="resource-noc" onclick="navigateTo('resources','resource-noc')"><span class="item-icon">🏷️</span>2. Occupational Wage Report NOC 12562</div>
+    <div class="sidebar-item" data-nav="resources" data-id="resource-high-wage" onclick="navigateTo('resources','resource-high-wage')"><span class="item-icon">🏛️</span>3. High-Wage Threshold Province Wise</div>
+    <div class="sidebar-item" data-nav="resources" data-id="resource-wage" onclick="navigateTo('resources','resource-wage')"><span class="item-icon">💰</span>4. Wage Report</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Rules & Updates</div>
+    <div class="sidebar-item" data-nav="rules" data-id="rules-current" onclick="navigateTo('rules','rules-current')"><span class="item-icon">📜</span>1. Current Rules</div>
+    <div class="sidebar-item" data-nav="rules" data-id="rules-recent" onclick="navigateTo('rules','rules-recent')"><span class="item-icon">🔄</span>2. Recent Changes</div>
+    <div class="sidebar-item" data-nav="rules" data-id="rules-history" onclick="navigateTo('rules','rules-history')"><span class="item-icon">📚</span>3. Change History</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-title">Admin</div>
+    <div class="sidebar-item" data-nav="admin" data-id="admin-content" onclick="navigateTo('admin','admin-content')"><span class="item-icon">📁</span>1. Manage Content</div>
+    <div class="sidebar-item" data-nav="admin" data-id="admin-documents" onclick="navigateTo('admin','admin-documents')"><span class="item-icon">📝</span>2. Add/Edit Documents</div>
+    <div class="sidebar-item" data-nav="admin" data-id="admin-rules" onclick="navigateTo('admin','admin-rules')"><span class="item-icon">📜</span>3. Update Rules</div>
+    <div class="sidebar-item" data-nav="admin" data-id="admin-users" onclick="navigateTo('admin','admin-users')"><span class="item-icon">👥</span>4. User Management</div>
+    <div class="sidebar-item" data-nav="admin" data-id="admin-version" onclick="navigateTo('admin','admin-version')"><span class="item-icon">📊</span>5. Version History</div>
+  </div>
+</aside>
+
+<main class="main-content" id="main-content" style="display:none;">
+  <div class="breadcrumb"><a onclick="showDashboard()">Dashboard</a><span>›</span><span id="breadcrumb-current">Home</span></div>
+  <div id="content-container"></div>
+</main>
+
+<script>
+// ===== SHOW MAIN APP =====
+async function showMainApp() {
+  await loadSharedStore();
+  document.getElementById('home-page').style.display = 'none';
+  document.getElementById('app-header').style.display = 'flex';
+  document.getElementById('sidebar').style.display = 'block';
+  document.getElementById('main-content').style.display = 'block';
+  showDashboard();
+  window.scrollTo(0,0);
+}
+
+// ===== CHAPTER 1 HTML (Position Assessment) =====
+const chapter1HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Manual Ch1.1 – Position Assessment</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:linear-gradient(135deg,#fff7ed 0%,#fffbeb 40%,#fef3c7 100%);color:#1c1917;min-height:100vh}
+.container{max-width:1400px;margin:0 auto;padding:20px 24px}
+.header{background:linear-gradient(135deg,#f97316,#ea580c);padding:16px 40px;display:flex;justify-content:space-between;align-items:center}
+.manual-header{padding:40px 20px 20px;text-align:center}
+.manual-header h1{font-family:'Space Grotesk',sans-serif;font-size:2.5rem;font-weight:700}
+.manual-header h1 .highlight{color:#ea580c}
+.section-card{background:rgba(255,255,255,.85);border:1px solid #fed7aa;border-radius:16px;padding:24px;margin:20px 0}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:1.4rem;font-weight:600;color:#c2410c;margin-bottom:16px}
+table{width:100%;border-collapse:collapse}
+th{background:rgba(249,115,22,.15);color:#c2410c;padding:10px 14px;text-align:left;border-bottom:2px solid #f97316}
+td{padding:10px 14px;border-bottom:1px solid #fed7aa}
+.stepper{display:flex;flex-direction:column;gap:8px}
+.step-item{display:flex;align-items:flex-start;gap:12px;background:rgba(255,255,255,.8);border:1px solid #fed7aa;border-radius:10px;padding:12px 15px;cursor:pointer}
+.step-item:hover{border-color:#fb923c}
+.step-num{width:28px;height:28px;border-radius:50%;background:#f97316;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:.8rem}
+.noc-digits{display:flex;justify-content:center;gap:8px;margin:20px 0;flex-wrap:wrap}
+.noc-digit{width:70px;height:70px;border-radius:12px;background:#fff;border:2px solid #f97316;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;cursor:pointer}
+.noc-digit:hover{background:#f97316;color:#fff}
+.golden-rule{background:linear-gradient(135deg,#ffedd5,#fed7aa);border:2px solid #f97316;border-radius:12px;padding:20px;text-align:center;margin:20px 0}
+.teer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:20px 0}
+.teer-card{border-radius:14px;padding:16px;border:2px solid;cursor:pointer;background:#fff}
+.accordion-header{display:flex;justify-content:space-between;padding:12px 16px;background:rgba(249,115,22,.08);border:1px solid #f97316;border-radius:10px;cursor:pointer}
+.accordion-content{padding:0 16px;max-height:0;overflow:hidden;transition:max-height .3s}
+.accordion.open .accordion-content{max-height:3000px;padding:16px}
+.next-btn{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;padding:14px 30px;border-radius:30px;border:none;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:1rem}
+.status{margin-left:auto;font-size:.85rem;font-weight:600}
+.status.unlocked{color:#16a34a}.status.current{color:#f97316}.status.locked{color:#57534e}
+</style>
+</head>
+<body>
+<div class="header"><div style="color:#fff;font-weight:bold;">VMC · Manual</div></div>
+<div class="container">
+<div class="manual-header"><div class="chapter-badge">📘 MANUAL — CHAPTER 1.1</div><h1>POSITION <span class="highlight">ASSESSMENT</span></h1><div class="subtitle">NOC · TEER · WORK LOCATION · WAGE · STREAM</div></div>
+<div class="section-card"><div class="section-title">✅ Completed Stages</div><table><tr><th>Completed Area</th><th>What We Have Learned</th></tr><tr><td>🧲 Employer Lead & Intake</td><td>How the employer enters the LMIA process and how the case begins</td></tr><tr><td>🤝 Employer Onboarding</td><td>How VMC introduces the process and collects initial information</td></tr><tr><td>💻 Job Bank Access</td><td>How the employer is guided through Job Bank account/access requirements</td></tr><tr><td>💰 Financial Documents</td><td>Why financial/business information is requested and how initial financial information is reviewed</td></tr></table></div>
+<div class="section-card"><div class="section-title">🔄 Position Assessment Flow</div><div class="stepper"><div class="step-item"><div class="step-num">1</div><div><strong>Employer Provides Position Information</strong></div></div><div class="step-item"><div class="step-num">2</div><div><strong>Review Duties & Responsibilities</strong></div></div><div class="step-item"><div class="step-num">3</div><div><strong>Identify Appropriate NOC</strong></div></div><div class="step-item"><div class="step-num">4</div><div><strong>Confirm TEER / Occupational Classification</strong></div></div><div class="step-item"><div class="step-num">5</div><div><strong>Confirm Province & Work Location</strong></div></div><div class="step-item"><div class="step-num">6</div><div><strong>Determine Applicable Wage Requirement</strong></div></div><div class="step-item"><div class="step-num">7</div><div><strong>Compare Employer's Proposed Wage</strong></div></div><div class="step-item"><div class="step-num">8</div><div><strong>Determine Applicable LMIA Stream</strong></div></div><div class="step-item"><div class="step-num">9</div><div><strong>Confirm Employment Terms & Requirements</strong></div></div><div class="step-item"><div class="step-num">10</div><div><strong>Position Ready for Recruitment</strong></div></div></div></div>
+<div class="section-card"><div class="section-title">STEP 6 — Understanding NOC & TEER</div><div class="objective-box">Before a Case Officer can assess the position, they must understand Canada's National Occupational Classification (NOC) system and the TEER structure.</div>
+<div class="golden-rule"><p>⭐ THE GOLDEN RULE OF NOC SELECTION</p><p>SELECT THE NOC BASED ON THE ACTUAL JOB DUTIES — NOT THE JOB TITLE ALONE.</p></div>
+<div class="noc-digits"><div class="noc-digit">2</div><div class="noc-digit">1</div><div class="noc-digit">2</div><div class="noc-digit">3</div><div class="noc-digit">2</div></div></div>
+<div class="section-card"><div class="section-title">TEER AT A GLANCE</div><div class="teer-grid"><div class="teer-card" style="border-color:#2563eb"><div class="teer-name">TEER 0</div><div class="teer-desc">Management Occupations</div></div><div class="teer-card" style="border-color:#16a34a"><div class="teer-name">TEER 1</div><div class="teer-desc">Professional Occupations</div></div><div class="teer-card" style="border-color:#eab308"><div class="teer-name">TEER 2</div><div class="teer-desc">Technical & Skilled</div></div><div class="teer-card" style="border-color:#f97316"><div class="teer-name">TEER 3</div><div class="teer-desc">Intermediate / Skilled</div></div><div class="teer-card" style="border-color:#dc2626"><div class="teer-name">TEER 4</div><div class="teer-desc">Secondary School & Job Training</div></div><div class="teer-card" style="border-color:#7c3aed"><div class="teer-name">TEER 5</div><div class="teer-desc">Short-Term Work Demonstration</div></div></div></div>
+<div class="section-card"><div class="section-title">Roadmap</div><div class="stepper"><div class="step-item"><div class="step-num">1</div><div>Employer Position Information</div><span class="status unlocked">🔓 Unlocked</span></div><div class="step-item"><div class="step-num">2</div><div>NOC Assessment</div><span class="status unlocked">🔓 Unlocked</span></div><div class="step-item"><div class="step-num">3</div><div>TEER Understanding</div><span class="status unlocked">🔓 Unlocked</span></div><div class="step-item"><div class="step-num">4</div><div>Work Location</div><span class="status current">🔒 Next</span></div><div class="step-item"><div class="step-num">5</div><div>Wage Assessment</div><span class="status locked">🔒 Locked</span></div><div class="step-item"><div class="step-num">6</div><div>Stream Determination</div><span class="status locked">🔒 Locked</span></div><div class="step-item"><div class="step-num">7</div><div>Employment Terms</div><span class="status locked">🔒 Locked</span></div><div class="step-item"><div class="step-num">8</div><div>Position Approval for Recruitment</div><span class="status locked">🔒 Locked</span></div></div></div>
+</div>
+</body>
+</html>`;
+
+// ===== CHAPTER 2 HTML (Wage Assessment & Stream) =====
+const chapter2HTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Manual Ch1.2 – Wage Assessment & Stream</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:linear-gradient(135deg,#fff7ed 0%,#fffbeb 40%,#fef3c7 100%);color:#1c1917;min-height:100vh}
+.container{max-width:1400px;margin:0 auto;padding:20px 24px}
+.header{background:linear-gradient(135deg,#f97316,#ea580c);padding:16px 40px;display:flex;justify-content:space-between;align-items:center}
+.manual-header{padding:40px 20px 20px;text-align:center}
+.manual-header h1{font-family:'Space Grotesk',sans-serif;font-size:2.5rem;font-weight:700}
+.manual-header h1 .highlight{color:#ea580c}
+.section-card{background:rgba(255,255,255,.85);border:1px solid #fed7aa;border-radius:16px;padding:24px;margin:20px 0}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:1.4rem;font-weight:600;color:#c2410c;margin-bottom:16px}
+.accordion{margin:10px 0;border:1px solid #fed7aa;border-radius:12px;overflow:hidden}
+.accordion-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:rgba(249,115,22,.08);cursor:pointer}
+.accordion-header:hover{background:rgba(249,115,22,.15)}
+.accordion-header .step-label{display:flex;align-items:center;gap:12px}
+.accordion-header .step-num{width:32px;height:32px;border-radius:50%;background:#f97316;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.accordion-header .title{font-weight:600;color:#c2410c}
+.accordion-content{padding:0;max-height:0;overflow:hidden;transition:max-height .4s;background:#fff}
+.accordion.open .accordion-content{max-height:3000px;padding:20px}
+.accordion-content p{font-size:.95rem;line-height:1.6;margin-bottom:8px}
+.accordion-content .note{background:#ffedd5;border-left:4px solid #f97316;padding:8px 12px;border-radius:6px;font-size:.85rem;margin:10px 0}
+.accordion-content .esdc{background:rgba(220,38,38,.08);border-left:4px solid #dc2626;padding:8px 12px;border-radius:6px;font-size:.85rem;margin:10px 0}
+.stream-box{background:#fff;border:2px solid #fed7aa;border-radius:14px;padding:20px}
+.stream-box.high{border-top:4px solid #2563eb}
+.stream-box.low{border-top:4px solid #f97316}
+.stream-box .title{font-family:'Space Grotesk',sans-serif;font-size:1.3rem;font-weight:600}
+.stream-box.high .title{color:#2563eb}
+.stream-box.low .title{color:#ea580c}
+.golden-rule{background:linear-gradient(135deg,#ffedd5,#fed7aa);border:2px solid #f97316;border-radius:12px;padding:20px;text-align:center;margin:20px 0}
+.example-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.example-card{background:#fff;border:1px solid #fed7aa;border-radius:14px;padding:20px}
+.example-card .result-tag{display:inline-block;padding:4px 14px;border-radius:20px;font-weight:600;font-size:.85rem;margin-top:10px}
+.result-low{background:#fed7aa;color:#9a3412}
+.result-high{background:#bfdbfe;color:#1e3a8a}
+.flow-diagram{display:flex;flex-direction:column;align-items:center;gap:6px;margin:20px 0}
+.flow-step{background:rgba(255,255,255,.9);border:2px solid #f97316;border-radius:10px;padding:10px 20px;text-align:center;font-weight:500;min-width:150px}
+.flow-arrow{color:#f97316;font-size:1.2rem;font-weight:700}
+.next-btn{background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;padding:14px 30px;border-radius:30px;border:none;cursor:pointer;font-family:'Space Grotesk',sans-serif;font-size:1rem}
+</style>
+</head>
+<body>
+<div class="header"><div style="color:#fff;font-weight:bold;">VMC · Manual</div></div>
+<div class="container">
+<div class="manual-header"><div class="chapter-badge">📘 MANUAL — CHAPTER 1.2</div><h1>WAGE ASSESSMENT & <span class="highlight">LMIA STREAM</span></h1><div class="subtitle">STEP 7 — WAGE ASSESSMENT & LMIA STREAM DETERMINATION</div></div>
+<div class="section-card">
+<div class="section-title">💰 STEP 7 — Wage Assessment & Stream Determination</div>
+<p><strong>7.1 What is Wage?</strong> – Amount employer agrees to pay.</p>
+<p><strong>7.2 Offered Wage?</strong> – Wage employer intends to pay.</p>
+<p><strong>7.3 Median Wage?</strong> – Middle wage in Job Bank.</p>
+<p><strong>7.4 Prevailing Wage?</strong> – Wage employer must meet.</p>
+<p><strong>7.5 High/Low Threshold?</strong> – Provincial median +20%.</p>
+</div>
+<div class="section-card">
+<div class="section-title">🔎 7.6 How Do We Identify the Correct Wage?</div>
+<div class="accordion open"><div class="accordion-header"><div class="step-label"><span class="step-num">1</span><span class="title">Confirm the NOC</span></div><span>−</span></div><div class="accordion-content"><p><strong>Ensure correct NOC</strong> based on duties.</p><div class="note">If NOC is wrong, everything else is wrong.</div></div></div>
+<div class="accordion"><div class="accordion-header"><div class="step-label"><span class="step-num">2</span><span class="title">Confirm the Work Location</span></div><span>+</span></div><div class="accordion-content"><p><strong>Record:</strong> Province, City, Location.</p></div></div>
+<div class="accordion"><div class="accordion-header"><div class="step-label"><span class="step-num">3</span><span class="title">Open Job Bank Wage Report</span></div><span>+</span></div><div class="accordion-content"><p>Use Job Bank wage tool, enter NOC.</p><div class="esdc">ESDC: Use median wage column.</div></div></div>
+<div class="accordion"><div class="accordion-header"><div class="step-label"><span class="step-num">4</span><span class="title">Record the Job Bank Wage</span></div><span>+</span></div><div class="accordion-content"><table><tr><th>Wage</th><th>Amount</th></tr><tr><td>Low</td><td>$22/hr</td></tr><tr><td>Median</td><td>$27/hr</td></tr><tr><td>High</td><td>$35/hr</td></tr></table></div></div>
+<div class="accordion"><div class="accordion-header"><div class="step-label"><span class="step-num">5</span><span class="title">Check Employer's Comparable Employees</span></div><span>+</span></div><div class="accordion-content"><p><strong>If NO:</strong> Use Job Bank median.</p><p><strong>If YES:</strong> Check what they earn.</p></div></div>
+<div class="accordion"><div class="accordion-header"><div class="step-label"><span class="step-num">6</span><span class="title">Check Employer's Offered Wage</span></div><span>+</span></div><div class="accordion-content"><p>Example: $30/hr. Compare with prevailing.</p></div></div>
+<div class="accordion"><div class="accordion-header"><div class="step-label"><span class="step-num">7</span><span class="title">Determine High-Wage or Low-Wage</span></div><span>+</span></div><div class="accordion-content"><p>Compare offered wage to provincial threshold.</p><div style="display:flex;gap:20px;flex-wrap:wrap"><div class="stream-box high" style="flex:1;min-width:200px"><div class="title">🔵 High-Wage</div><p>Offered ≥ Threshold</p></div><div class="stream-box low" style="flex:1;min-width:200px"><div class="title">🟠 Low-Wage</div><p>Offered &lt; Threshold</p></div></div></div></div>
+</div>
+<div class="section-card">
+<div class="section-title">Examples</div>
+<div class="example-grid">
+<div class="example-card"><h3>Example 1 — Low-Wage</h3><p><strong>Cook</strong> Ontario, offered $30/hr. Job median $27. Threshold $36.92. $30 &lt; $36.92 → Low-wage.</p><span class="result-tag result-low">🟠 LOW-WAGE</span></div>
+<div class="example-card"><h3>Example 2 — High-Wage</h3><p><strong>Software Developer</strong> Ontario, offered $45/hr. Job median $40. Threshold $36.92. $45 ≥ $36.92 → High-wage.</p><span class="result-tag result-high">🔵 HIGH-WAGE</span></div>
+</div>
+</div>
+<div class="section-card"><div class="section-title">🧠 The One Flow</div><div class="flow-diagram"><div class="flow-step">POSITION</div><div class="flow-arrow">↓</div><div class="flow-step">NOC</div><div class="flow-arrow">↓</div><div class="flow-step">WORK LOCATION</div><div class="flow-arrow">↓</div><div class="flow-step">JOB BANK LOW/MED/HIGH</div><div class="flow-arrow">↓</div><div class="flow-step">CHECK COMPARABLE EMPLOYEES</div><div class="flow-arrow">↓</div><div class="flow-step">DETERMINE PREVAILING WAGE</div><div class="flow-arrow">↓</div><div class="flow-step">CHECK OFFERED WAGE</div><div class="flow-arrow">↓</div><div class="flow-step">CHECK ESDC THRESHOLD</div><div class="flow-arrow">↓</div><div class="flow-step">HIGH/LOW</div></div></div>
+<div class="golden-rule"><p>⭐ GOLDEN RULE</p><p>Job Bank for wage. Comparable employees. ESDC threshold.</p></div>
+</div>
+</body>
+</html>`;
+
+// ===== CONTENT STORE =====
+const defaultContent = {
+  'manual-1': chapter1HTML,
+  'manual-2': chapter2HTML,
+  'manual-3':'', 'manual-4':'', 'manual-5':'', 'manual-6':'', 'manual-7':'', 'manual-8':'',
+  'process-1':'', 'process-2':'', 'process-3':'', 'process-4':'', 'process-5':'',
+  'template-email-onboarding':'', 'template-recruitment-data':'', 'template-recruitment-efforts':'', 'template-high-wage':'', 'template-low-wage':'',
+  'resource-census':'', 'resource-noc':'', 'resource-high-wage':'', 'resource-wage':'',
+  'rules-current':'', 'rules-recent':'', 'rules-history':''
+};
+/* ===== SHARED CLOUD STORAGE (SUPABASE) =====
+   1) Create a Supabase project.
+   2) Run the SQL supplied with this file.
+   3) Put your Project URL and anon key below.
+   Until configured, the app falls back to localStorage so nothing is lost locally.
+*/
+const SUPABASE_URL = 'PASTE_YOUR_SUPABASE_PROJECT_URL_HERE';
+const SUPABASE_ANON_KEY = 'PASTE_YOUR_SUPABASE_ANON_KEY_HERE';
+const SHARED_STORAGE_ENABLED = SUPABASE_URL.startsWith('https://') && !SUPABASE_URL.includes('PASTE_') && !SUPABASE_ANON_KEY.includes('PASTE_');
+const LOCAL_STORAGE_KEY = 'vmcContent';
+let contentStore = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || 'null') || JSON.parse(JSON.stringify(defaultContent));
+let sharedHistory = [];
+
+async function loadSharedStore(){
+  if(!SHARED_STORAGE_ENABLED) return;
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/vmc_content?select=id,content,updated_at,updated_by&order=id.asc`, {
+      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}
+    });
+    if(!r.ok) throw new Error(await r.text());
+    const rows = await r.json();
+    rows.forEach(row => { contentStore[row.id] = row.content || ''; });
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(contentStore));
+  }catch(e){ console.error('Shared content load failed:',e); }
+}
+
+async function saveStore(changedId=null, action='update'){
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(contentStore));
+  if(!SHARED_STORAGE_ENABLED || !changedId) return;
+  try{
+    const payload = {id:changedId, content:contentStore[changedId] || '', updated_by:(localStorage.getItem('vmcUser') || 'Admin')};
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/vmc_content?on_conflict=id`, {
+      method:'POST',
+      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+      body:JSON.stringify(payload)
+    });
+    if(!r.ok) throw new Error(await r.text());
+    await fetch(`${SUPABASE_URL}/rest/v1/vmc_version_history`, {
+      method:'POST',
+      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({module_id:changedId,content:contentStore[changedId] || '',action,changed_by:payload.updated_by})
+    });
+  }catch(e){ console.error('Shared content save failed:',e); throw e; }
+}
+
+async function loadVersionHistory(){
+  if(!SHARED_STORAGE_ENABLED) return [];
+  try{
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/vmc_version_history?select=id,module_id,action,changed_by,created_at&order=created_at.desc&limit=100`, {
+      headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}
+    });
+    if(!r.ok) throw new Error(await r.text());
+    sharedHistory = await r.json();
+  }catch(e){ console.error('Version history load failed:',e); sharedHistory=[]; }
+  return sharedHistory;
+}
+
+const titles = {
+  'manual-1':'Position Assessment','manual-2':'Wage Assessment & LMIA Stream','manual-3':'Employer Eligibility & Workforce','manual-4':'Job Bank Advertisement & Recruitment','manual-5':'Recruitment Efforts','manual-6':'LMIA Submission Process – High Wage','manual-7':'Low Wage Submission','manual-8':'LMIA Officer Interview Preparation',
+  'process-1':'Department Overview','process-2':'Position Assessment','process-3':'Wage & Stream','process-4':'Job Bank Advertisement & Details','process-5':'Recruitment Efforts',
+  'template-email-onboarding':'Employer Onboarding','template-recruitment-data':'Recruitment Advertisement Data Template','template-recruitment-efforts':'Recruitment Efforts Template','template-high-wage':'High Wage Template','template-low-wage':'Low Wage Template',
+  'resource-census':'Census','resource-noc':'Occupation and Wage Report – NOC 12562','resource-high-wage':'High-Wage Salary Threshold – Province Wise','resource-wage':'Wage Report',
+  'rules-current':'Current Rules','rules-recent':'Recent Changes','rules-history':'Change History'
+};
+
+// ===== NAVIGATION =====
+async function navigateTo(section, id) {
+  document.querySelectorAll('.sidebar-item').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.sidebar-subitem').forEach(el=>el.classList.remove('active'));
+  const item = document.querySelector(`[data-id="${id}"]`);
+  if(item) item.classList.add('active');
+  document.getElementById('breadcrumb-current').textContent = titles[id] || 'Content';
+  document.getElementById('content-container').innerHTML = await renderContent(section, id);
+  window.scrollTo(0,0);
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function renderContent(section, id) {
+  if(section === 'admin') return renderAdmin(id);
+  if(id === 'process-4') return `<div class="content-area" style="padding:28px;"><h2>Job Bank Advertisement Process</h2><p>Go to Google Drive - Refer to Job Bank Advertisement Process.</p></div>`;
+  const content = contentStore[id];
+  if(content && content.trim()) {
+    return `<div class="content-area"><iframe srcdoc="${escapeHtml(content)}" style="width:100%;min-height:800px;border:none;border-radius:12px;"></iframe></div>`;
+  } else {
+    return `<div class="content-area"><div class="empty-state"><div class="empty-icon">📁</div><h3>${titles[id] || 'Module'}</h3><p>Content not added yet.</p><div class="admin-note">Use Admin → Add/Edit Documents to add content.</div><button onclick="navigateTo('admin','admin-documents');setSelectedModule('${id}')" style="margin-top:16px;background:var(--vmc-blue);color:#fff;padding:10px 24px;border:none;border-radius:6px;cursor:pointer;">Add Content</button></div></div>`;
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ===== DASHBOARD =====
+function showDashboard(){
+  document.getElementById('breadcrumb-current').textContent = 'Home';
+  const cont = document.getElementById('content-container');
+  cont.innerHTML = `<div class="dashboard">
+    <div class="dashboard-welcome"><h2>Welcome to VMC LMIA Operations</h2><p>Select a section from the sidebar. Use Admin to add content.</p></div>
+    <div class="dashboard-stats">
+      <div class="stat-card"><div class="stat-number">8</div><div class="stat-label">Manual</div></div>
+      <div class="stat-card"><div class="stat-number">5</div><div class="stat-label">Process</div></div>
+      <div class="stat-card"><div class="stat-number">5</div><div class="stat-label">Templates</div></div>
+      <div class="stat-card"><div class="stat-number">4</div><div class="stat-label">Resources</div></div>
+      <div class="stat-card"><div class="stat-number">3</div><div class="stat-label">Rules</div></div>
+    </div>
+    <div class="dashboard-sections">
+      <div class="dashboard-card" onclick="navigateTo('manual','manual-1')"><div class="card-header"><div style="font-size:20px;">📘</div><div class="card-title">Manual</div></div><div class="card-desc">8 chapters covering the LMIA workflow.</div></div>
+      <div class="dashboard-card" onclick="navigateTo('process','process-1')"><div class="card-header"><div style="font-size:20px;">🔄</div><div class="card-title">Actual Process Guide</div></div><div class="card-desc">Step-by-step guides.</div></div>
+      <div class="dashboard-card" onclick="navigateTo('templates','template-email-onboarding')"><div class="card-header"><div style="font-size:20px;">📝</div><div class="card-title">Templates & Checklists</div></div><div class="card-desc">Useful templates.</div></div>
+      <div class="dashboard-card" onclick="navigateTo('resources','resource-census')"><div class="card-header"><div style="font-size:20px;">🌐</div><div class="card-title">Government Resources</div></div><div class="card-desc">Official links.</div></div>
+      <div class="dashboard-card" onclick="navigateTo('rules','rules-current')"><div class="card-header"><div style="font-size:20px;">📜</div><div class="card-title">Rules & Updates</div></div><div class="card-desc">Current rules.</div></div>
+      <div class="dashboard-card" onclick="navigateTo('admin','admin-content')"><div class="card-header"><div style="font-size:20px;">⚙️</div><div class="card-title">Admin</div></div><div class="card-desc">Manage content and users.</div></div>
+    </div>
+  </div>`;
+}
+
+// ===== SEARCH =====
+function handleSearch(query){
+  if(!query || query.trim().length < 2){ showDashboard(); return; }
+  const q = query.toLowerCase();
+  const results = [];
+  Object.keys(titles).forEach(k => { if(titles[k].toLowerCase().includes(q)) results.push({id:k,title:titles[k]}); });
+  const cont = document.getElementById('content-container');
+  document.getElementById('breadcrumb-current').textContent = 'Search Results';
+  if(results.length === 0){ cont.innerHTML = `<div class="content-area" style="padding:28px;"><h3>No results</h3></div>`; }
+  else {
+    let html = '<div class="content-area" style="padding:28px;"><h2>Search Results</h2>';
+    results.forEach(r => { html += `<div style="padding:10px;border-bottom:1px solid var(--vmc-border);cursor:pointer;" onclick="navigateTo('manual','${r.id}')">${r.title}</div>`; });
+    html += '</div>';
+    cont.innerHTML = html;
+  }
+}
+
+// ===== ADMIN =====
+let selectedModuleId = null;
+function setSelectedModule(id){ selectedModuleId = id; const el = document.getElementById('module-select'); if(el) el.value = id; }
+function renderAdmin(id){
+  switch(id){
+    case 'admin-content': return renderAdminManage();
+    case 'admin-documents': return renderAdminDocuments();
+    case 'admin-rules': return `<div class="admin-list"><h3>Update Rules</h3><p>Use Add/Edit Documents.</p></div>`;
+    case 'admin-users': return `<div class="admin-list"><h3>User Management</h3><p>Currently only Admin.</p></div>`;
+    case 'admin-version': return renderVersionHistory();
+  }
+}
+async function renderVersionHistory(){
+  const history = await loadVersionHistory();
+  if(!SHARED_STORAGE_ENABLED) return `<div class="admin-list"><h3>Version History</h3><p>Shared history is not connected yet. Configure Supabase in the HTML file.</p></div>`;
+  if(!history.length) return `<div class="admin-list"><h3>Version History</h3><p>No shared changes recorded yet.</p></div>`;
+  return `<div class="admin-list"><h3>Shared Version History</h3><table><tr><th>Date</th><th>Module</th><th>Action</th><th>Changed By</th></tr>${history.map(h=>`<tr><td>${new Date(h.created_at).toLocaleString()}</td><td>${titles[h.module_id]||h.module_id}</td><td>${h.action}</td><td>${h.changed_by||'Admin'}</td></tr>`).join('')}</table></div>`;
+}
+
+function renderAdminManage(){
+  const rows = Object.keys(defaultContent).map(k => { const has = contentStore[k] && contentStore[k].trim() ? '✅' : '❌'; return `<tr><td>${titles[k]}</td><td>${has}</td><td><button class="edit-btn" onclick="navigateTo('admin','admin-documents');setSelectedModule('${k}')">Edit</button><button class="delete-btn" onclick="clearModule('${k}')">Clear</button></td></tr>`; }).join('');
+  return `<div class="admin-list"><h3>Manage Content</h3><table><tr><th>Module</th><th>Status</th><th>Actions</th></tr>${rows}</table></div>`;
+}
+async function clearModule(id){ contentStore[id]=''; try{ await saveStore(id,'clear'); showDashboard(); }catch(e){ alert('Could not save the change to the shared server.'); } }
+function renderAdminDocuments(){
+  const options = Object.keys(defaultContent).map(k => `<option value="${k}">${titles[k]||k}</option>`).join('');
+  const contentToEdit = (selectedModuleId && contentStore[selectedModuleId]) ? contentStore[selectedModuleId] : '';
+  return `<div class="admin-form"><h3>Add / Edit Document Content</h3><label>Select Module:</label><select id="module-select" onchange="selectedModuleId=this.value;document.getElementById('content-textarea').value=contentStore[selectedModuleId]||'';">${options}</select><label>Paste HTML Content:</label><textarea id="content-textarea" placeholder="Paste HTML here..." style="width:100%;min-height:300px;">${contentToEdit}</textarea><label>Or upload file:</label><input type="file" id="file-input" accept=".html,.htm" onchange="readFile(event)"><button class="btn" onclick="saveContent()">Save Content</button><button class="btn" style="background:var(--vmc-red);" onclick="clearContent()">Clear</button><div id="admin-message" class="admin-message"></div></div>`;
+}
+function readFile(event){ const file=event.target.files[0]; if(!file)return; const reader=new FileReader(); reader.onload=function(e){ document.getElementById('content-textarea').value=e.target.result; }; reader.readAsText(file); }
+async function saveContent(){ const id=document.getElementById('module-select').value; const content=document.getElementById('content-textarea').value; contentStore[id]=content; try{ await saveStore(id,'update'); const msg=document.getElementById('admin-message'); msg.textContent=SHARED_STORAGE_ENABLED?'Saved to team database!':'Saved locally (Supabase not configured).'; msg.style.display='block'; setTimeout(()=>msg.style.display='none',2500); }catch(e){ alert('The change could not be saved to the shared database. Check your Supabase settings.'); } }
+async function clearContent(){ const id=document.getElementById('module-select').value; contentStore[id]=''; try{ await saveStore(id,'clear'); const msg=document.getElementById('admin-message'); msg.textContent=SHARED_STORAGE_ENABLED?'Cleared and synced with team.':'Cleared locally (Supabase not configured).'; msg.style.display='block'; setTimeout(()=>msg.style.display='none',2500); }catch(e){ alert('The change could not be saved to the shared database.'); } }
+
+// ===== SIDEBAR =====
+function toggleSubmenu(el){ const sub=el.nextElementSibling; if(sub && sub.classList.contains('sidebar-submenu')){ sub.classList.toggle('open'); } }
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); }
+</script>
+
+</body>
+</html>
