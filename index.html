@@ -363,6 +363,137 @@
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+// ===== SUPABASE AUTHENTICATION =====
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+let currentUser = null;
+
+async function checkAuthentication() {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (!session) {
+    showLoginScreen();
+    return false;
+  }
+
+  currentUser = session.user;
+
+  const { data: admin, error } = await supabaseClient
+    .from('vmc_admins')
+    .select('user_id,name,email')
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+
+  if (error || !admin) {
+    await supabaseClient.auth.signOut();
+    currentUser = null;
+    showLoginScreen('This email is not authorized to access the VMC system.');
+    return false;
+  }
+
+  localStorage.setItem('vmcUser', admin.name);
+  return true;
+}
+
+function showLoginScreen(message = '') {
+  document.getElementById('home-page').style.display = 'none';
+  document.getElementById('app-header').style.display = 'none';
+  document.getElementById('sidebar').style.display = 'none';
+  document.getElementById('main-content').style.display = 'none';
+
+  let login = document.getElementById('vmc-login-screen');
+
+  if (!login) {
+    login = document.createElement('div');
+    login.id = 'vmc-login-screen';
+
+    login.innerHTML = `
+      <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#004182,#0a66c2);font-family:Arial;padding:20px;">
+        <div style="width:100%;max-width:420px;background:#fff;border-radius:16px;padding:36px;box-shadow:0 10px 40px rgba(0,0,0,.25);">
+          <div style="text-align:center;margin-bottom:28px;">
+            <h2 style="color:#004182;">VMC LMIA Operations</h2>
+            <p style="color:#666;font-size:13px;">Authorized Admin Login</p>
+          </div>
+
+          <div id="login-error" style="display:none;background:#fdecea;color:#c62828;padding:10px;border-radius:6px;margin-bottom:15px;font-size:13px;"></div>
+
+          <label>Email</label>
+          <input id="vmc-login-email" type="email" placeholder="name@visamastercanada.com"
+            style="width:100%;padding:12px;margin:8px 0 16px;box-sizing:border-box;">
+
+          <label>Password</label>
+          <input id="vmc-login-password" type="password" placeholder="Enter your password"
+            style="width:100%;padding:12px;margin:8px 0 20px;box-sizing:border-box;">
+
+          <button onclick="vmcLogin()"
+            style="width:100%;padding:12px;background:#0a66c2;color:#fff;border:none;border-radius:7px;cursor:pointer;">
+            Sign In
+          </button>
+        </div>
+      </div>
+    `;
+
+    document.body.prepend(login);
+  }
+
+  login.style.display = 'block';
+
+  if (message) {
+    const errorBox = document.getElementById('login-error');
+    errorBox.textContent = message;
+    errorBox.style.display = 'block';
+  }
+}
+
+async function vmcLogin() {
+  const email = document.getElementById('vmc-login-email').value.trim();
+  const password = document.getElementById('vmc-login-password').value;
+  const errorBox = document.getElementById('login-error');
+
+  errorBox.style.display = 'none';
+
+  if (!email || !password) {
+    errorBox.textContent = 'Please enter your email and password.';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    errorBox.textContent = 'Invalid email or password.';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  currentUser = data.user;
+
+  const { data: admin, error: adminError } = await supabaseClient
+    .from('vmc_admins')
+    .select('user_id,name,email')
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+
+  if (adminError || !admin) {
+    await supabaseClient.auth.signOut();
+    currentUser = null;
+    errorBox.textContent = 'This email is not authorized to access the VMC system.';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  localStorage.setItem('vmcUser', admin.name);
+  document.getElementById('vmc-login-screen').style.display = 'none';
+
+  await showMainApp();
+}
+
 // ===== SHOW MAIN APP =====
 async function showMainApp() {
   await loadSharedStore();
