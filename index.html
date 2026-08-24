@@ -689,7 +689,12 @@ async function saveStore(changedId=null, action='update'){
     if(!r.ok) throw new Error(await r.text());
     await fetch(`${SUPABASE_URL}/rest/v1/vmc_version_history`, {
       method:'POST',
-      headers:{'apikey':SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'return=minimal'},
+      headers:{
+  'apikey':SUPABASE_ANON_KEY,
+  'Authorization':`Bearer ${currentUser?.access_token}`,
+  'Content-Type':'application/json',
+  'Prefer':'return=minimal'
+},
       body:JSON.stringify({module_id:changedId,content:contentStore[changedId] || '',action,changed_by:payload.updated_by})
     });
   }catch(e){ console.error('Shared content save failed:',e); throw e; }
