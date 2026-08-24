@@ -712,14 +712,6 @@ const historyResponse = await fetch(
   }
 );
 
-if (!historyResponse.ok) {
-  throw new Error(await historyResponse.text());
-}
-      body:JSON.stringify({module_id:changedId,content:contentStore[changedId] || '',action,changed_by:payload.updated_by})
-    });
-  }catch(e){ console.error('Shared content save failed:',e); throw e; }
-}
-
 async function loadVersionHistory(){
   if(!SHARED_STORAGE_ENABLED) return [];
   try{
