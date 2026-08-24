@@ -819,9 +819,7 @@ async function clearContent(){ const id=document.getElementById('module-select')
 // ===== SIDEBAR =====
 function toggleSubmenu(el){ const sub=el.nextElementSibling; if(sub && sub.classList.contains('sidebar-submenu')){ sub.classList.toggle('open'); } }
 function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); }
-document.addEventListener('DOMContentLoaded', async function() {
-  await checkAuthentication();
-});
+
 </script>
 
 </body>
