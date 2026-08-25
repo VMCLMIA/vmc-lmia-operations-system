@@ -647,83 +647,283 @@ const defaultContent = {
   'rules-current':'', 'rules-recent':'', 'rules-history':''
 };
 /* ===== SHARED CLOUD STORAGE (SUPABASE) =====
-   1) Create a Supabase project.
-   2) Run the SQL supplied with this file.
-   3) Put your Project URL and anon key below.
-   Until configured, the app falls back to localStorage so nothing is lost locally.
+   Shared content + version history
 */
+
 const SUPABASE_URL = 'https://tpcjmrwqlxzbhpurmxde.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_oHNFWJn7rCnXQEWAH8yTfA_k-AmpS1X';
+
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
-const SHARED_STORAGE_ENABLED = SUPABASE_URL.startsWith('https://') && !SUPABASE_URL.includes('PASTE_') && !SUPABASE_ANON_KEY.includes('PASTE_');
+
+const SHARED_STORAGE_ENABLED =
+  SUPABASE_URL.startsWith('https://') &&
+  !SUPABASE_URL.includes('PASTE_') &&
+  !SUPABASE_ANON_KEY.includes('PASTE_');
+
 const LOCAL_STORAGE_KEY = 'vmcContent';
-let contentStore = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || 'null') || JSON.parse(JSON.stringify(defaultContent));
+
+let contentStore =
+  JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || 'null') ||
+  JSON.parse(JSON.stringify(defaultContent));
+
 let sharedHistory = [];
 
+
+/* ===== LOAD SHARED CONTENT ===== */
+
 async function loadSharedStore(){
+
   if(!SHARED_STORAGE_ENABLED) return;
+
   try{
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/vmc_content?select=id,content,updated_at,updated_by&order=id.asc`, {
-      headers:{'apikey':SUPABASE_ANON_KEY}
-    });
-    if(!r.ok) throw new Error(await r.text());
+
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/vmc_content?select=id,content,updated_at,updated_by&order=id.asc`,
+      {
+        headers:{
+          'apikey': SUPABASE_ANON_KEY
+        }
+      }
+    );
+
+    if(!r.ok){
+      throw new Error(await r.text());
+    }
+
     const rows = await r.json();
-    rows.forEach(row => { contentStore[row.id] = row.content || ''; });
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(contentStore));
-  }catch(e){ console.error('Shared content load failed:',e); }
-}
 
-async function saveStore(changedId=null, action='update'){
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(contentStore));
-  if(!SHARED_STORAGE_ENABLED || !changedId) return;
-  try{
-    const payload = {id:changedId, content:contentStore[changedId] || '', updated_by:(localStorage.getItem('vmcUser') || 'Admin')};
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/vmc_content?on_conflict=id`, {
-      method:'POST',
-      headers:{'apikey':SUPABASE_ANON_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-      body:JSON.stringify(payload)
+    rows.forEach(row => {
+      contentStore[row.id] = row.content || '';
     });
-    if(!r.ok) throw new Error(await r.text());
-    const { data: { session } } = await supabaseClient.auth.getSession();
 
-if (!session) {
-  throw new Error('No authenticated session found.');
+    localStorage.setItem(
+      LOCAL_STORAGE_KEY,
+      JSON.stringify(contentStore)
+    );
+
+  }catch(e){
+
+    console.error(
+      'Shared content load failed:',
+      e
+    );
+
+  }
 }
 
-const historyResponse = await fetch(
-  `${SUPABASE_URL}/rest/v1/vmc_version_history`,
-  {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_ANON_KEY,
-      'Authorization': `Bearer ${session.access_token}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=minimal'
-    },
-    body: JSON.stringify({
-      module_id: changedId,
-      content: contentStore[changedId] || '',
-      action,
-      changed_by: payload.updated_by
-    })
+
+/* ===== SAVE CONTENT + VERSION HISTORY ===== */
+
+async function saveStore(
+  changedId = null,
+  action = 'update'
+){
+
+  localStorage.setItem(
+    LOCAL_STORAGE_KEY,
+    JSON.stringify(contentStore)
+  );
+
+  if(!SHARED_STORAGE_ENABLED || !changedId){
+    return;
   }
-);
+
+  try{
+
+    const {
+      data: { session }
+    } = await supabaseClient.auth.getSession();
+
+    if(!session){
+
+      throw new Error(
+        'No authenticated session found.'
+      );
+
+    }
+
+    const payload = {
+
+      id: changedId,
+
+      content:
+        contentStore[changedId] || '',
+
+      updated_by:
+        localStorage.getItem('vmcUser') || 'Admin'
+
+    };
+
+
+    /* SAVE CONTENT */
+
+    const contentResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/vmc_content?on_conflict=id`,
+      {
+
+        method: 'POST',
+
+        headers: {
+
+          'apikey': SUPABASE_ANON_KEY,
+
+          'Authorization':
+            `Bearer ${session.access_token}`,
+
+          'Content-Type':
+            'application/json',
+
+          'Prefer':
+            'resolution=merge-duplicates,return=minimal'
+
+        },
+
+        body:
+          JSON.stringify(payload)
+
+      }
+    );
+
+
+    if(!contentResponse.ok){
+
+      throw new Error(
+        await contentResponse.text()
+      );
+
+    }
+
+
+    /* SAVE VERSION HISTORY */
+
+    const historyResponse = await fetch(
+      `${SUPABASE_URL}/rest/v1/vmc_version_history`,
+      {
+
+        method: 'POST',
+
+        headers: {
+
+          'apikey': SUPABASE_ANON_KEY,
+
+          'Authorization':
+            `Bearer ${session.access_token}`,
+
+          'Content-Type':
+            'application/json',
+
+          'Prefer':
+            'return=minimal'
+
+        },
+
+        body: JSON.stringify({
+
+          module_id:
+            changedId,
+
+          content:
+            contentStore[changedId] || '',
+
+          action:
+            action,
+
+          changed_by:
+            payload.updated_by
+
+        })
+
+      }
+    );
+
+
+    if(!historyResponse.ok){
+
+      throw new Error(
+        await historyResponse.text()
+      );
+
+    }
+
+  }catch(e){
+
+    console.error(
+      'Shared content save failed:',
+      e
+    );
+
+    throw e;
+
+  }
+
+}
+
+
+/* ===== LOAD VERSION HISTORY ===== */
 
 async function loadVersionHistory(){
-  if(!SHARED_STORAGE_ENABLED) return [];
-  try{
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/vmc_version_history?select=id,module_id,action,changed_by,created_at&order=created_at.desc&limit=100`, {
-      headers:{'apikey':SUPABASE_ANON_KEY}
-    });
-    if(!r.ok) throw new Error(await r.text());
-    sharedHistory = await r.json();
-  }catch(e){ console.error('Version history load failed:',e); sharedHistory=[]; }
-  return sharedHistory;
-}
 
+  if(!SHARED_STORAGE_ENABLED){
+    return [];
+  }
+
+  try{
+
+    const {
+      data: { session }
+    } = await supabaseClient.auth.getSession();
+
+
+    const headers = {
+      'apikey': SUPABASE_ANON_KEY
+    };
+
+
+    if(session){
+
+      headers['Authorization'] =
+        `Bearer ${session.access_token}`;
+
+    }
+
+
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/vmc_version_history?select=id,module_id,action,changed_by,created_at&order=created_at.desc&limit=100`,
+      {
+        headers
+      }
+    );
+
+
+    if(!r.ok){
+
+      throw new Error(
+        await r.text()
+      );
+
+    }
+
+
+    sharedHistory = await r.json();
+
+
+  }catch(e){
+
+    console.error(
+      'Version history load failed:',
+      e
+    );
+
+    sharedHistory = [];
+
+  }
+
+  return sharedHistory;
+
+}
 const titles = {
   'manual-1':'Position Assessment','manual-2':'Wage Assessment & LMIA Stream','manual-3':'Employer Eligibility & Workforce','manual-4':'Job Bank Advertisement & Recruitment','manual-5':'Recruitment Efforts','manual-6':'LMIA Submission Process – High Wage','manual-7':'Low Wage Submission','manual-8':'LMIA Officer Interview Preparation',
   'process-1':'Department Overview','process-2':'Position Assessment','process-3':'Wage & Stream','process-4':'Job Bank Advertisement & Details','process-5':'Recruitment Efforts',
